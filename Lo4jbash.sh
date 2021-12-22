@@ -82,7 +82,6 @@ else
    fi
 else
 ok "Java is not installed"
-yum remove log4j
 fi
 
 # second scan with package manager
@@ -169,6 +168,7 @@ if [ "$(command -v unzip)" ]; then
     if [[ $COUNT_FOUND -gt 0 ]]; then
       warning "Found $COUNT_FOUND vulnerabilities in unpacked binaries"
     fi
+    yum remove log4j
   fi
 else
   information "JAR/WAR/EAR files (unzip not found)"
