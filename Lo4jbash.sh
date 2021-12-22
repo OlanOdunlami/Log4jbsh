@@ -1,7 +1,7 @@
 #!/bin/bash
 
-yum install mlocate -y
-sudo updatedb
+#yum install mlocate -y
+#sudo updatedb
 
 # Parameter Packages:
 PACKAGES='solr\|elastic\|log4j'
@@ -62,18 +62,28 @@ fi
 
 # first scan for Log4j with Locate
 echo
-information "Looking for files containing log4j..."
+information "Checking if Java is installed..."
+JAVA="$(command -v java)"
+if [ "$JAVA" ]; then
+  warning "Java is installed"
+  echo Attempting to patch the files
+  information "   Java applications often bundle their libraries inside binary files,"
+  yum install log4j
 if [ "$(command -v locate)" ]; then
   information "using locate"
-fi
 OUTPUT="$(locate_log4j | grep -iv log4js | grep -v log4j_checker_beta)"
 if [ "$OUTPUT" ]; then
   warning "Maybe vulnerable, those files contain the name:"
   printf "%s\n" "$OUTPUT"
-# Remove Log4j files 
-  sudo yum remove log4j 
+   #sudo yum remove log4j 
 else
   ok "No files containing log4j"
+     fi
+else
+"No files containing log4j" 
+   fi
+else
+ok "Java is not installed"
 fi
 
 # second scan with package manager
@@ -113,17 +123,6 @@ function dir_shop() {
 } 
 zip -d $dir_shop org/apache/logging/log4j/core/lookup/JndiLookup.class
 
-
-# Fourth scan: check for "java" command
-echo
-information "Checking if Java is installed..."
-JAVA="$(command -v java)"
-if [ "$JAVA" ]; then
-  warning "Java is installed"
-  information "   Java applications often bundle their libraries inside binary files,"
-else
-  ok "Java is not installed"
-fi
 
 # perform best-effort find call for all jars and optionally check against hashes
 echo
