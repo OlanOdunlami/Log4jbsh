@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#yum install mlocate -y
+yum install mlocate -y
 sudo updatedb
 
 # Parameter Packages:
