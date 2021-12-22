@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#yum install mlocate -y
-#sudo updatedb
+yum install mlocate -y
+sudo updatedb
 
 # Parameter Packages:
 PACKAGES='solr\|elastic\|log4j'
@@ -68,7 +68,6 @@ if [ "$JAVA" ]; then
   warning "Java is installed"
   echo Attempting to patch the files
   information "   Java applications often bundle their libraries inside binary files,"
-  yum install log4j
 if [ "$(command -v locate)" ]; then
   information "using locate"
 OUTPUT="$(locate_log4j | grep -iv log4js | grep -v log4j_checker_beta)"
