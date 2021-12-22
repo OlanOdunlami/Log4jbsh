@@ -1,6 +1,6 @@
 #!/bin/bash
 
-yum install mlocate
+#yum install mlocate -y
 sudo updatedb
 
 # Parameter Packages:
@@ -71,7 +71,7 @@ if [ "$OUTPUT" ]; then
   warning "Maybe vulnerable, those files contain the name:"
   printf "%s\n" "$OUTPUT"
 # Remove Log4j files 
-  sudo dnf remove log4j 
+  sudo yum remove log4j 
 else
   ok "No files containing log4j"
 fi
@@ -106,7 +106,13 @@ echo
 information "Checking Jndi Class Path "
 jar tf /usr/share/logstash/logstash-core/lib/jars/log4j-core-2.* | grep -i jndi
 # Remove the Vulnerable JndiLookup Class
-zip -dq log4j-core-*.jar org/apache/logging/log4j/core/lookup/JndiLookup.class
+shopt -s globstar
+#ls -lrt /usr/share/logstash/logstash-core/**/*/log4j-core-2.*
+function dir_shop() {
+    ls -lrt "/usr/share/logstash/logstash-core/**/*/log4j-core-2.*" 
+} 
+zip -d $dir_shop org/apache/logging/log4j/core/lookup/JndiLookup.class
+
 
 # Fourth scan: check for "java" command
 echo
@@ -173,4 +179,4 @@ fi
 # delete temp folder containing $file_temp_hashes
 [ $ok_hashes ] && rm -rf -- "$dir_temp_hashes"
 
-information "_________________________________________________" 
+information "_________________________________________________"
