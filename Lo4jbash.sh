@@ -167,8 +167,8 @@ if [ "$(command -v unzip)" ]; then
     information "Found $COUNT files in unpacked binaries containing the string 'log4j' with $COUNT_FOUND vulnerabilities"
     if [[ $COUNT_FOUND -gt 0 ]]; then
       warning "Found $COUNT_FOUND vulnerabilities in unpacked binaries"
+      yum remove log4j
     fi
-    yum remove log4j
   fi
 else
   information "JAR/WAR/EAR files (unzip not found)"
