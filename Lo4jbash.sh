@@ -73,8 +73,7 @@ if [ "$(command -v locate)" ]; then
 OUTPUT="$(locate_log4j | grep -iv log4js | grep -v log4j_checker_beta)"
 if [ "$OUTPUT" ]; then
   warning "Maybe vulnerable, those files contain the name:"
-  printf "%s\n" "$OUTPUT"
-   #sudo yum remove log4j 
+  printf "%s\n" "$OUTPUT" 
 else
   ok "No files containing log4j"
      fi
@@ -83,6 +82,7 @@ else
    fi
 else
 ok "Java is not installed"
+yum remove log4j
 fi
 
 # second scan with package manager
