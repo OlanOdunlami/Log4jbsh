@@ -1,8 +1,8 @@
 #!/bin/bash
-
-yum install mlocate -y
+cd /usr/share/logstash
+yum install mlocate zip unzip -y
 sudo updatedb
-
+​
 # Parameter Packages:
 PACKAGES='solr\|elastic\|log4j'
 
@@ -22,7 +22,7 @@ function ok() {
 }
 
 if [ "$SHA256_HASHES_URL" = "" ]; then
-   SHA256_HASHES_URL="./cve1.txt"
+   SHA256_HASHES_URL="./cve.txt"
 fi
 
 export LANG=
@@ -42,7 +42,7 @@ function locate_log4j() {
       | grep -v '^find:.* No such file or directory$'
   fi
 }
-
+​
 function find_jar_files() {
   find \
     /var /etc /usr /opt /lib* \
@@ -50,12 +50,12 @@ function find_jar_files() {
     | grep -v '^find:.* Permission denied$' \
     | grep -v '^find:.* No such file or directory$'
 } 
-
+​
 dir_temp_hashes=$(mktemp -d --suffix _log4jscan)
 file_temp_hashes="$dir_temp_hashes/vulnerable.hashes"
 ok_hashes=
 if [[ -n $SHA256_HASHES_URL && $(command -v wget) ]]; then
-  wget  --max-redirect=0 --tries=2 -O "$file_temp_hashes.in" -- "$SHA256_HASHES_URL"
+       "$file_temp_hashes.in" -- "$SHA256_HASHES_URL"
 elif [[ -n $SHA256_HASHES_URL && $(command -v curl) ]]; then
   curl --globoff -f "$SHA256_HASHES_URL" -o "$file_temp_hashes.in"
 fi
@@ -93,6 +93,7 @@ if [ "$(command -v yum)" ]; then
   if [ "$OUTPUT" ]; then
     warning "Maybe vulnerable, yum installed packages:"
     printf "%s\n" "$OUTPUT"
+    yum remove log4j -y
   else
     ok "No yum packages found"
   fi
@@ -112,14 +113,27 @@ fi
 # Third scan: check for "jndilookup class"
 echo
 information "Checking Jndi Class Path "
-jar tf /usr/share/logstash/logstash-core/lib/jars/log4j-core-2.* | grep -i jndi
-# Remove the Vulnerable JndiLookup Class
-shopt -s globstar
-#ls -lrt /usr/share/logstash/logstash-core/**/*/log4j-core-2.*
-function dir_shop() {
-    ls -lrt "/usr/share/logstash/logstash-core/**/*/log4j-core-2.*" 
-} 
-zip -d $dir_shop org/apache/logging/log4j/core/lookup/JndiLookup.class
+  cd /usr/share/logstash
+  ls -lrt /usr/share/logstash/logstash-core/**/*/log4j-core-2.*
+  cat <<EOF >/tmp/remove_backup_jndi_lookup.rb
+  require 'fileutils'
+  rubyzip_dir_path = Dir.glob("**/rubyzip-*/").first
+
+  Dir.mkdir 'jar_backup'
+
+  $LOAD_PATH.unshift(rubyzip_dir_path + "/lib")
+  require "zip"
+  Dir.glob(["**/*/logstash-input-tcp-*.jar", "**/*/log4j-core*.jar"]).each do |zip|
+  puts "Backing up \"#{zip}\" to \"jar_backup\""
+  FileUtils.cp(zip, "jar_backup")
+  print "Removing JndiLookup.class from #{zip}.."
+  Zip::File.open(zip, create: true) do |zipfile|
+    zipfile.remove("org/apache/logging/log4j/core/lookup/JndiLookup.class") rescue nil
+    puts "done."
+  end
+end 
+EOF
+bin/ruby /tmp/remove_jndi_lookup.rb
 
 
 # perform best-effort find call for all jars and optionally check against hashes
@@ -164,10 +178,10 @@ if [ "$(command -v unzip)" ]; then
   done <<<$(find_jar_files)
   echo
   if [[ $COUNT -gt 0 ]]; then
-    information "Found $COUNT files in unpacked binaries containing the string 'log4j' with $COUNT_FOUND vulnerabilities"
+  information "Found $COUNT files in unpacked binaries containing the string 'log4j' with $COUNT_FOUND vulnerabilities"  
+    systemctl restart logstash
     if [[ $COUNT_FOUND -gt 0 ]]; then
       warning "Found $COUNT_FOUND vulnerabilities in unpacked binaries"
-      yum remove log4j
     fi
   fi
 else
@@ -178,3 +192,4 @@ fi
 [ $ok_hashes ] && rm -rf -- "$dir_temp_hashes"
 
 information "_________________________________________________"
+
